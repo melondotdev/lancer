@@ -17,8 +17,8 @@ import fetchWalletData from '../components/Auth/FetchWalletData.jsx';
 const Home = () => {  
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
-  const [uid, setUid] = useState('');
-  const [userData, setUserData] = useState('');
+  const [uid, setUid] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [walletData, setWalletData] = useState({});
   const [isEditProfile, setIsEditProfile] = useState(false);
   const [isMintJobPost, setIsMintJobPost] = useState(false);
@@ -28,37 +28,45 @@ const Home = () => {
   const auth = getAuth();
   
   useEffect(() => {
-    const fetchDataAndUpdateState = async () => {
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          // User is signed in
-          setUid(user.uid);
-          const userDataSnapshot = await fetchUserData(uid);
-          setUserData(userDataSnapshot);
-          if (userData.empty) {
-            await addDoc(collection(db, "users"), {
-              uid: uid,
-              name: "Example",
-              about: "Example About Me",
-              email: "example@gmail.com",
-              portfolio: "example.com",
-              discord: "example",
-              twitter: "@example",
-            });
-            const updatedUserData = await fetchUserData(uid);
-            setUserData(updatedUserData);
-          }
-        } else {
-          // User is signed out
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUid(user.uid);
+      } else {
+        // User is signed out
+      }
+    });
+  }, [auth, uid, userData]);  
+
+  useEffect(() => {
+    const fetchUserDataAndSave = async () => {
+      if (uid != null) {
+        const userDataSnapshot = await fetchUserData(uid);
+        setUserData(userDataSnapshot);
+        if (userData != null) {
+          await addDoc(collection(db, "users"), {
+            uid: uid,
+            name: "Example",
+            about: "Example About Me",
+            email: "example@gmail.com",
+            portfolio: "example.com",
+            discord: "example",
+            twitter: "@example",
+          });
+          const updatedUserData = await fetchUserData(uid);
+          setUserData(updatedUserData);
         }
-      });
-    };
-  
-    fetchDataAndUpdateState();
-  }, [auth, userData.empty, uid]);  
+      } else {
+      
+      }
+    }
+
+    fetchUserDataAndSave();
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Listener for being authenticated with Firebase
-
+  
   useEffect(() => {
     const checkEmailSignIn = async () => {
       if (isSignInWithEmailLink(auth, window.location.href)) {
